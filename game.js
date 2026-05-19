@@ -338,26 +338,22 @@
     life:  { base:'#ff3a55', light:'#ff9aa5', glow:'rgba(255,58,85,0.7)' },
   };
   function maybeDropPower(x, y, forced = false) {
-    // Yeşil tuğlalar (forced=true) her zaman power-up bırakır.
-    // İlk bölümlerde neredeyse her tuğladan power-up yağsın, sonra normale dönsün.
-    // L1: 0.85, L2: 0.70, L3: 0.50, L4: 0.35, L5: 0.25, L6+: 0.20
-    if (!forced) {
-      let chance;
-      if (level === 1)      chance = 0.85;
-      else if (level === 2) chance = 0.70;
-      else if (level === 3) chance = 0.50;
-      else if (level === 4) chance = 0.35;
-      else if (level === 5) chance = 0.25;
-      else                  chance = 0.20;
-      if (Math.random() >= chance) return;
-    }
+    // L1: GARANTİ %100, hepsi multi-ball — saniyeler içinde temizlenir.
+    // L2: %85, L3: %60, L4: %40, L5+: %25
+    let chance;
+    if (forced)           chance = 1;
+    else if (level === 1) chance = 1.0;
+    else if (level === 2) chance = 0.85;
+    else if (level === 3) chance = 0.60;
+    else if (level === 4) chance = 0.40;
+    else                  chance = 0.25;
+    if (Math.random() >= chance) return;
 
-    // Erken bölümlerde ×3 (multi) ezici çoğunlukta, ekranı dolduralım.
     let pool;
-    if (level === 1)      pool = ['multi','multi','multi','multi','multi','wide','life'];
-    else if (level === 2) pool = ['multi','multi','multi','multi','wide','wide','life'];
-    else if (level === 3) pool = ['multi','multi','multi','wide','wide','slow','life'];
-    else if (level === 4) pool = ['multi','multi','wide','wide','slow','life'];
+    if (level === 1)      pool = ['multi'];
+    else if (level === 2) pool = ['multi','multi','multi','wide','wide','life'];
+    else if (level === 3) pool = ['multi','multi','wide','wide','slow','life'];
+    else if (level === 4) pool = ['multi','wide','wide','slow','life'];
     else                  pool = POWER_TYPES;
 
     const type = pool[Math.floor(Math.random() * pool.length)];
@@ -833,6 +829,16 @@
     drawParticles();
     drawPopups();
     drawComboHud();
+    drawVersion();
+  }
+
+  function drawVersion() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(180,200,255,0.5)';
+    ctx.font = 'bold 10px Segoe UI, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('v7', 8, H - 8);
+    ctx.restore();
   }
 
   function roundRect(ctx, x, y, w, h, r) {
