@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEON BREAKER — Premium Tuğla Kırma</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="hud">
+      <div class="hud-block">
+        <span class="hud-label">SKOR</span>
+        <span id="score" class="hud-value">0</span>
+      </div>
+      <div class="hud-block center">
+        <span class="hud-label">SEVİYE</span>
+        <span id="level" class="hud-value">1</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">CAN</span>
+        <span id="lives" class="hud-value">♥♥♥</span>
+      </div>
+    </div>
+
+    <div id="stage">
+      <canvas id="game" width="900" height="640"></canvas>
+
+      <div id="overlay" class="overlay show">
+        <div class="overlay-card">
+          <h1 class="title">
+            <span class="t1">NEON</span><span class="t2">BREAKER</span>
+          </h1>
+          <p class="subtitle">Premium Tuğla Kırma Deneyimi</p>
+          <div class="controls">
+            <div><kbd>←</kbd> <kbd>→</kbd> veya <kbd>FARE</kbd> ile hareket</div>
+            <div><kbd>BOŞLUK</kbd> ile topu fırlat · <kbd>P</kbd> ile duraklat</div>
+          </div>
+          <button id="startBtn" class="btn-primary">OYUNA BAŞLA</button>
+          <div class="legend">
+            <div class="legend-row">
+              <span class="chip chip-wide"></span> Geniş raket
+              <span class="chip chip-multi"></span> Çoklu top
+              <span class="chip chip-slow"></span> Yavaş top
+              <span class="chip chip-life"></span> Ekstra can
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer">
+      <span class="hint">Power-up'ları yakala · Tuğla zincirleri bonus puan verir</span>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
