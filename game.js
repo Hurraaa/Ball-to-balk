@@ -89,6 +89,7 @@
       vx: 0, vy: 0,
       r: 8,
       stuck,
+      stuckAt: performance.now(),
       trail: [],
       speed: 6.0,
       slowUntil: 0,
@@ -129,7 +130,8 @@
 
   function buildLevel(lv) {
     bricks = [];
-    const rows = Math.min(5 + Math.floor(lv / 2), BRICK_ROWS_MAX);
+    // Hızlı erken bölümler: L1=2 sıra, L2=3, L3=4, L4=5 ... maks 10
+    const rows = Math.min(lv + 1, BRICK_ROWS_MAX);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < BRICK_COLS; c++) {
         let skip = false;
@@ -294,9 +296,13 @@
     } else if (kind === 'win') {
       card.innerHTML = `
         <h1 class="title"><span class="t1">SEVİYE</span><span class="t2">TAMAM</span></h1>
-        <p class="subtitle">Skor: ${score} · Sıradaki seviye ${level + 1}</p>
+        <p class="subtitle">Skor: ${score} · Sıradaki: ${level + 1}</p>
         <button id="nextBtn" class="btn-primary">DEVAM</button>`;
       document.getElementById('nextBtn').onclick = () => { hideOverlay(); nextLevel(); };
+      // 1 sn sonra otomatik geç — beklemek yok.
+      setTimeout(() => {
+        if (state === STATE.WIN) { hideOverlay(); nextLevel(); }
+      }, 1000);
     }
     ui.overlay.classList.add('show');
   }
@@ -418,6 +424,13 @@
       if (b.stuck) {
         b.x = paddle.x + paddle.w / 2;
         b.y = paddle.y - b.r - 4;
+        // 0.8 sn sonra otomatik fırlat — beklemek yok.
+        if (performance.now() - b.stuckAt > 800) {
+          const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 0.6;
+          b.vx = Math.cos(angle) * b.speed;
+          b.vy = Math.sin(angle) * b.speed;
+          b.stuck = false;
+        }
       } else {
         if (b.slowUntil && performance.now() > b.slowUntil) {
           b.slowUntil = 0;
