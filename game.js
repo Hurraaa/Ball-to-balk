@@ -91,8 +91,9 @@
       stuck,
       stuckAt: performance.now(),
       trail: [],
-      speed: 6.0,
+      speed: 7.5 + Math.min((level - 1) * 0.25, 2.0),
       slowUntil: 0,
+      fastUntil: 0,
     });
   }
 
@@ -331,33 +332,35 @@
 
   // ---------------------- POWER-UPS ----------------------------
   const POWER_TYPES = ['wide', 'multi', 'slow', 'life'];
+  const NEGATIVE_TYPES = new Set(['narrow', 'fast']);
   const POWER_COLORS = {
-    wide:  { base:'#16b7ff', light:'#7ef1ff', glow:'rgba(22,183,255,0.7)' },
-    multi: { base:'#ff3ec9', light:'#ffb1f1', glow:'rgba(255,62,201,0.7)' },
-    slow:  { base:'#7a4dff', light:'#bda0ff', glow:'rgba(122,77,255,0.7)' },
-    life:  { base:'#ff3a55', light:'#ff9aa5', glow:'rgba(255,58,85,0.7)' },
+    wide:   { base:'#16b7ff', light:'#7ef1ff', glow:'rgba(22,183,255,0.7)' },
+    multi:  { base:'#ff3ec9', light:'#ffb1f1', glow:'rgba(255,62,201,0.7)' },
+    slow:   { base:'#7a4dff', light:'#bda0ff', glow:'rgba(122,77,255,0.7)' },
+    life:   { base:'#ff3a55', light:'#ff9aa5', glow:'rgba(255,58,85,0.7)' },
+    narrow: { base:'#c41a3a', light:'#ff7a8e', glow:'rgba(255,40,70,0.85)' },
+    fast:   { base:'#d04a00', light:'#ffb070', glow:'rgba(255,120,30,0.85)' },
   };
   function maybeDropPower(x, y, forced = false) {
-    // L1: GARANTİ %100, hepsi multi-ball — saniyeler içinde temizlenir.
-    // L2: %85, L3: %60, L4: %40, L5+: %25
+    // L1-L4 hızlı: yüksek drop oranı + multi-ball bol. L3+ power-down karışır.
     let chance;
     if (forced)           chance = 1;
     else if (level === 1) chance = 1.0;
     else if (level === 2) chance = 0.85;
-    else if (level === 3) chance = 0.60;
-    else if (level === 4) chance = 0.40;
-    else                  chance = 0.25;
+    else if (level === 3) chance = 0.70;
+    else if (level === 4) chance = 0.70;
+    else                  chance = 0.45;
     if (Math.random() >= chance) return;
 
     let pool;
     if (level === 1)      pool = ['multi'];
-    else if (level === 2) pool = ['multi','multi','multi','wide','wide','life'];
-    else if (level === 3) pool = ['multi','multi','wide','wide','slow','life'];
-    else if (level === 4) pool = ['multi','wide','wide','slow','life'];
-    else                  pool = POWER_TYPES;
+    else if (level === 2) pool = ['multi','multi','multi','multi','wide','wide','life'];
+    else if (level === 3) pool = ['multi','multi','multi','wide','wide','slow','life','narrow'];
+    else if (level === 4) pool = ['multi','multi','multi','multi','multi','wide','wide','slow','life','narrow','fast'];
+    else                  pool = ['multi','multi','wide','wide','slow','life','narrow','fast'];
 
     const type = pool[Math.floor(Math.random() * pool.length)];
-    powerups.push({ x, y, type, vy: 2.2, w: 26, h: 26 });
+    powerups.push({ x, y, type, vy: 2.2, w: 26, h: 26, negative: NEGATIVE_TYPES.has(type) });
   }
   function applyPower(type) {
     sfx.power();
@@ -396,6 +399,22 @@
       lives = Math.min(9, lives + 1);
       updateHud();
       spawnPopup(paddle.x + paddle.w / 2, paddle.y - 18, '+1 CAN', '#ff9aa5');
+    } else if (type === 'narrow') {
+      paddle.w = Math.max(55, paddle.baseW * 0.6);
+      paddle.expiresAt = performance.now() + 9000;
+      spawnPopup(paddle.x + paddle.w / 2, paddle.y - 18, 'KÜÇÜK RAKET!', '#ff7a8e');
+      haptic(40);
+    } else if (type === 'fast') {
+      const until = performance.now() + 8000;
+      for (const b of balls) {
+        b.fastUntil = until;
+        const a = Math.atan2(b.vy, b.vx);
+        const sp = Math.min(13, Math.hypot(b.vx, b.vy) * 1.4);
+        b.vx = Math.cos(a) * sp;
+        b.vy = Math.sin(a) * sp;
+      }
+      spawnPopup(paddle.x + paddle.w / 2, paddle.y - 18, 'HIZLI TOP!', '#ffb070');
+      haptic(40);
     }
   }
 
@@ -430,6 +449,12 @@
       } else {
         if (b.slowUntil && performance.now() > b.slowUntil) {
           b.slowUntil = 0;
+          const a = Math.atan2(b.vy, b.vx);
+          b.vx = Math.cos(a) * b.speed;
+          b.vy = Math.sin(a) * b.speed;
+        }
+        if (b.fastUntil && performance.now() > b.fastUntil) {
+          b.fastUntil = 0;
           const a = Math.atan2(b.vy, b.vx);
           b.vx = Math.cos(a) * b.speed;
           b.vy = Math.sin(a) * b.speed;
@@ -701,12 +726,17 @@
   }
 
   function drawBall(b) {
+    const trailColor = b.fastUntil ? '#ffb070' : (b.slowUntil ? '#bda0ff' : '#7ef1ff');
+    const glowColor  = b.fastUntil ? 'rgba(255,120,30,0.9)' : (b.slowUntil ? 'rgba(138,92,255,0.8)' : 'rgba(56,232,255,0.85)');
+    const midColor   = b.fastUntil ? '#ffd2a0' : (b.slowUntil ? '#cdb8ff' : '#aef3ff');
+    const darkColor  = b.fastUntil ? '#a02000' : (b.slowUntil ? '#5b32d6' : '#0d6db8');
+
     for (let i = 0; i < b.trail.length; i++) {
       const t = b.trail[i];
       const a = i / b.trail.length;
       ctx.save();
       ctx.globalAlpha = a * 0.5;
-      ctx.fillStyle = b.slowUntil ? '#bda0ff' : '#7ef1ff';
+      ctx.fillStyle = trailColor;
       ctx.beginPath();
       ctx.arc(t.x, t.y, b.r * (0.4 + a * 0.6), 0, Math.PI * 2);
       ctx.fill();
@@ -714,8 +744,8 @@
     }
 
     ctx.save();
-    ctx.shadowColor = b.slowUntil ? 'rgba(138,92,255,0.8)' : 'rgba(56,232,255,0.85)';
-    ctx.shadowBlur = 24;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = b.fastUntil ? 30 : 24;
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
@@ -724,8 +754,8 @@
 
     const grd = ctx.createRadialGradient(b.x - b.r * 0.4, b.y - b.r * 0.4, 1, b.x, b.y, b.r);
     grd.addColorStop(0, '#ffffff');
-    grd.addColorStop(0.4, b.slowUntil ? '#cdb8ff' : '#aef3ff');
-    grd.addColorStop(1, b.slowUntil ? '#5b32d6' : '#0d6db8');
+    grd.addColorStop(0.4, midColor);
+    grd.addColorStop(1, darkColor);
     ctx.fillStyle = grd;
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
@@ -794,13 +824,26 @@
       roundRect(ctx, cx - s / 2 + 1, cy - s / 2 + 1, s - 2, s / 2, 5);
       ctx.fill();
 
+      // Negatif (power-down) için uyarı çerçevesi
+      if (p.negative) {
+        const pulse = 0.6 + Math.sin(performance.now() / 120) * 0.4;
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        roundRect(ctx, cx - s / 2 + 1, cy - s / 2 + 1, s - 2, s - 2, 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+      }
+
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 12px Segoe UI, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
       ctx.shadowBlur = 4;
-      const labels = { wide: 'W', multi: '×3', slow: 'S', life: '♥' };
+      const labels = { wide: 'W', multi: '×3', slow: 'S', life: '♥', narrow: '↓W', fast: '⚡' };
       ctx.fillText(labels[p.type], cx, cy + 1);
       ctx.restore();
     }
@@ -837,7 +880,7 @@
     ctx.fillStyle = 'rgba(180,200,255,0.5)';
     ctx.font = 'bold 10px Segoe UI, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('v7', 8, H - 8);
+    ctx.fillText('v8', 8, H - 8);
     ctx.restore();
   }
 
