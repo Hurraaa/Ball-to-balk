@@ -330,10 +330,20 @@
     life:  { base:'#ff3a55', light:'#ff9aa5', glow:'rgba(255,58,85,0.7)' },
   };
   function maybeDropPower(x, y) {
-    if (Math.random() < 0.18) {
-      const type = POWER_TYPES[Math.floor(Math.random() * POWER_TYPES.length)];
-      powerups.push({ x, y, type, vy: 2.2, w: 26, h: 26 });
-    }
+    // İlk bölümlerde bol power-up, sonraki bölümlerde normal seviyeye iner.
+    // L1: 0.55, L2: 0.45, L3: 0.35, L4: 0.27, L5: 0.22, L6+: 0.18
+    const chance = Math.max(0.18, 0.55 - (level - 1) * 0.09);
+    if (Math.random() >= chance) return;
+
+    // Erken bölümlerde tuğla kıran power-up'ları (multi + wide) ağırlıklı dağıt.
+    let pool;
+    if (level === 1)      pool = ['multi','multi','multi','wide','wide','life'];
+    else if (level === 2) pool = ['multi','multi','wide','wide','slow','life'];
+    else if (level === 3) pool = ['multi','wide','wide','slow','slow','life'];
+    else                  pool = POWER_TYPES;
+
+    const type = pool[Math.floor(Math.random() * pool.length)];
+    powerups.push({ x, y, type, vy: 2.2, w: 26, h: 26 });
   }
   function applyPower(type) {
     sfx.power();
