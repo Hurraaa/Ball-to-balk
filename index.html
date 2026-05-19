@@ -2,7 +2,11 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0f1f" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>NEON BREAKER — Premium Tuğla Kırma</title>
 <link rel="stylesheet" href="style.css" />
 </head>
@@ -24,33 +28,35 @@
     </div>
 
     <div id="stage">
-      <canvas id="game" width="900" height="640"></canvas>
+      <canvas id="game" width="480" height="800"></canvas>
+
+      <button id="pauseBtn" class="pause-btn" aria-label="Duraklat">II</button>
 
       <div id="overlay" class="overlay show">
         <div class="overlay-card">
           <h1 class="title">
             <span class="t1">NEON</span><span class="t2">BREAKER</span>
           </h1>
-          <p class="subtitle">Premium Tuğla Kırma Deneyimi</p>
-          <div class="controls">
+          <p class="subtitle">Premium Tuğla Kırma</p>
+          <div class="controls desktop-only">
             <div><kbd>←</kbd> <kbd>→</kbd> veya <kbd>FARE</kbd> ile hareket</div>
-            <div><kbd>BOŞLUK</kbd> ile topu fırlat · <kbd>P</kbd> ile duraklat</div>
+            <div><kbd>BOŞLUK</kbd> ile topu fırlat · <kbd>P</kbd> duraklat</div>
+          </div>
+          <div class="controls mobile-only">
+            <div>👆 <b>Parmağınla</b> raketi sürükle</div>
+            <div>👇 <b>Dokun</b> topu fırlat</div>
           </div>
           <button id="startBtn" class="btn-primary">OYUNA BAŞLA</button>
           <div class="legend">
             <div class="legend-row">
-              <span class="chip chip-wide"></span> Geniş raket
-              <span class="chip chip-multi"></span> Çoklu top
-              <span class="chip chip-slow"></span> Yavaş top
-              <span class="chip chip-life"></span> Ekstra can
+              <span><span class="chip chip-wide"></span>Geniş</span>
+              <span><span class="chip chip-multi"></span>×3 Top</span>
+              <span><span class="chip chip-slow"></span>Yavaş</span>
+              <span><span class="chip chip-life"></span>+Can</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <div id="footer">
-      <span class="hint">Power-up'ları yakala · Tuğla zincirleri bonus puan verir</span>
     </div>
   </div>
 
