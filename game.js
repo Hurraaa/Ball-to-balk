@@ -27,6 +27,7 @@
     overlay: document.getElementById('overlay'),
     startBtn: document.getElementById('startBtn'),
     pauseBtn: document.getElementById('pauseBtn'),
+    levelGrid: document.getElementById('levelGrid'),
   };
 
   // ---------------------- AUDIO (procedural) -------------------
@@ -129,30 +130,155 @@
     { base:'#9bb0ff', light:'#d6dfff', dark:'#3a4ea0', glow:'rgba(155,176,255,0.55)' },
   ];
 
+  const STEEL_PALETTE = { base:'#7a8294', light:'#d6dce8', dark:'#2c3242', glow:'rgba(200,215,240,0.4)' };
+
+  // Pattern karakterleri: '.' boş · '1','2','3' = HP · 'S' = çelik (kırılmaz)
+  // 7 sütun genişliğinde, en fazla 10 sıra.
+  const LEVELS = [
+    // L1 — "GİRİŞ" (warm-up)
+    ['1111111',
+     '1111111'],
+    // L2 — "DUVAR"
+    ['1111111',
+     '1111111',
+     '1111111'],
+    // L3 — "TAÇ" (ilk 2-HP)
+    ['2222222',
+     '1111111',
+     '1111111',
+     '1111111'],
+    // L4 — "NOKTALAR" (ilk boşluklar)
+    ['2.2.2.2',
+     '1111111',
+     '1.1.1.1',
+     '1111111',
+     '2.2.2.2'],
+    // L5 — "KÜÇÜK KALE" (ilk mini-boss)
+    ['2222222',
+     '2.....2',
+     '2.121.2',
+     '2.....2',
+     '2222222'],
+    // L6 — "BANTLAR"
+    ['1111111',
+     '2222222',
+     '1111111',
+     '2222222',
+     '1111111',
+     '1111111'],
+    // L7 — "ELMAS"
+    ['...2...',
+     '..212..',
+     '.12321.',
+     '1232321',
+     '.12321.',
+     '..212..',
+     '...2...'],
+    // L8 — "ÇELİK GİRİŞ" (ilk steel)
+    ['S11111S',
+     '1.....1',
+     '1.212.1',
+     '1.121.1',
+     '1.212.1',
+     '1.....1',
+     'S22222S'],
+    // L9 — "DAMA"
+    ['1.2.2.1',
+     '.232.2.',
+     '2.323.2',
+     '.S.3.S.',
+     '2.323.2',
+     '.2.232.',
+     '1.2.2.1'],
+    // L10 — "ÇELİK KAFES" (mid boss)
+    ['SS222SS',
+     'S.222.S',
+     '.21312.',
+     '2233322',
+     '.21312.',
+     'S.222.S',
+     'SS222SS'],
+    // L11 — "PORTAL"
+    ['SSS.SSS',
+     '2.....2',
+     '2.222.2',
+     '2.323.2',
+     '2.222.2',
+     '2.....2',
+     'SSS.SSS',
+     '2222222'],
+    // L12 — "GAUNTLET"
+    ['2.S.S.2',
+     '2.3.3.2',
+     '.32.23.',
+     '2.323.2',
+     '.32.23.',
+     '2.3.3.2',
+     '2.S.S.2'],
+    // L13 — "ZIRH"
+    ['2.3.3.2',
+     '2.3.3.2',
+     'SSS.SSS',
+     '.21312.',
+     '2233322',
+     '.21312.',
+     'SSS.SSS',
+     '1111111'],
+    // L14 — "TAPINAK"
+    ['SS3.3SS',
+     '333.333',
+     'S.232.S',
+     '.32323.',
+     'S.232.S',
+     '333.333',
+     'SS3.3SS',
+     '.......',
+     '2222222'],
+    // L15 — "FİNAL"
+    ['SS3S3SS',
+     '3323233',
+     'S33233S',
+     '3322233',
+     '33S3S33',
+     '3322233',
+     'S33233S',
+     '3323233',
+     'SS3S3SS'],
+  ];
+
+  const LEVEL_NAMES = [
+    'GİRİŞ','DUVAR','TAÇ','NOKTALAR','KÜÇÜK KALE',
+    'BANTLAR','ELMAS','ÇELİK GİRİŞ','DAMA','ÇELİK KAFES',
+    'PORTAL','GAUNTLET','ZIRH','TAPINAK','FİNAL',
+  ];
+
+  function levelName(lv) {
+    if (lv <= LEVEL_NAMES.length) return LEVEL_NAMES[lv - 1];
+    return `USTA ${lv - LEVEL_NAMES.length}`;
+  }
+
   function buildLevel(lv) {
     bricks = [];
-    // Hızlı erken bölümler: L1=2 sıra, L2=3, L3=4, L4=5 ... maks 10
-    const rows = Math.min(lv + 1, BRICK_ROWS_MAX);
-    for (let r = 0; r < rows; r++) {
+    const idx = (lv - 1) % LEVELS.length;
+    const pattern = LEVELS[idx];
+
+    for (let r = 0; r < pattern.length; r++) {
+      const line = pattern[r];
       for (let c = 0; c < BRICK_COLS; c++) {
-        let skip = false;
-        if (lv === 2 && (r === 0 || r === rows - 1) && (c === 0 || c === BRICK_COLS - 1)) skip = true;
-        if (lv === 3 && r === 1 && c % 2 === 0) skip = true;
-        if (lv >= 4 && r === 0 && (c === 0 || c === BRICK_COLS - 1)) skip = true;
-        if (lv >= 5 && r === Math.floor(rows / 2) && c % 3 === 0) skip = true;
-        if (skip) continue;
+        const ch = line[c];
+        if (!ch || ch === '.' || ch === ' ') continue;
 
-        let hp = 1;
-        if (lv >= 2 && r === 0) hp = 2;
-        if (lv >= 4 && r <= 1) hp = 2;
-        if (lv >= 6 && r === 0) hp = 3;
+        let hp = 1, steel = false;
+        if (ch === 'S' || ch === 's') { hp = 9999; steel = true; }
+        else { hp = parseInt(ch, 10); if (!hp || hp < 1) continue; }
 
-        const palette = PALETTES[r % PALETTES.length];
+        const palette = steel ? STEEL_PALETTE : PALETTES[r % PALETTES.length];
         const x = BRICK_SIDE + c * (BRICK_W + BRICK_PAD);
         const y = BRICK_TOP + r * (BRICK_H + BRICK_PAD);
-        // Yeşil tuğlalar (row 3) garanti power-up bırakır.
-        const guaranteedPower = (r % PALETTES.length) === 3;
-        bricks.push({ x, y, w: BRICK_W, h: BRICK_H, hp, maxHp: hp, palette, hit: 0, alive: true, guaranteedPower });
+        bricks.push({
+          x, y, w: BRICK_W, h: BRICK_H,
+          hp, maxHp: hp, palette, hit: 0, alive: true, steel,
+        });
       }
     }
   }
@@ -208,7 +334,45 @@
     if (dt < 300 && dx < 12) releaseStuck();
   }, { passive: false });
 
-  ui.startBtn.addEventListener('click', () => { ensureAudio(); startGame(); });
+  // Ana menü HTML'sini sakla — game over sonrası geri dönerken kullanırız.
+  const MENU_HTML = ui.overlay.querySelector('.overlay-card').innerHTML;
+
+  function buildLevelGrid() {
+    const grid = document.getElementById('levelGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let i = 1; i <= LEVELS.length; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'level-btn';
+      btn.innerHTML = `<span class="lvl-num">${i}</span><span class="lvl-name">${levelName(i)}</span>`;
+      btn.addEventListener('click', () => { ensureAudio(); startGame(i); });
+      grid.appendChild(btn);
+    }
+  }
+
+  function wireMenu() {
+    const sb = document.getElementById('startBtn');
+    if (sb) sb.addEventListener('click', () => { ensureAudio(); startGame(1); });
+    buildLevelGrid();
+  }
+
+  function showMenu() {
+    // Önceki oyunun kalıntılarını temizle
+    balls.length = 0;
+    particles.length = 0;
+    popups.length = 0;
+    powerups.length = 0;
+    bricks = [];
+    combo = 0;
+
+    const card = ui.overlay.querySelector('.overlay-card');
+    card.innerHTML = MENU_HTML;
+    wireMenu();
+    ui.overlay.classList.add('show');
+    state = STATE.MENU;
+  }
+
+  wireMenu();
   ui.pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); ensureAudio(); togglePause(); });
   ui.pauseBtn.addEventListener('touchstart', (e) => {
     e.stopPropagation(); e.preventDefault();
@@ -233,8 +397,8 @@
   }
 
   // ---------------------- GAME FLOW ----------------------------
-  function startGame() {
-    score = 0; level = 1; lives = 3; combo = 0;
+  function startGame(startLevel = 1) {
+    score = 0; level = startLevel; lives = 3; combo = 0;
     paddle.w = paddle.baseW;
     paddle.x = W / 2 - paddle.w / 2;
     balls.length = 0; particles.length = 0; popups.length = 0; powerups.length = 0;
@@ -285,25 +449,32 @@
     if (kind === 'paused') {
       card.innerHTML = `
         <h1 class="title"><span class="t1">DURAKLA</span><span class="t2">TILDI</span></h1>
-        <p class="subtitle">Devam etmek için butona dokun</p>
-        <button id="resumeBtn" class="btn-primary">DEVAM ET</button>`;
+        <p class="subtitle">${level}. ${levelName(level)}</p>
+        <button id="resumeBtn" class="btn-primary">DEVAM ET</button>
+        <button id="menuBtn" class="btn-secondary">MENÜYE DÖN</button>`;
       document.getElementById('resumeBtn').onclick = () => togglePause();
+      document.getElementById('menuBtn').onclick = () => { state = STATE.MENU; showMenu(); };
     } else if (kind === 'over') {
       card.innerHTML = `
         <h1 class="title"><span class="t1">OYUN</span><span class="t2">BİTTİ</span></h1>
-        <p class="subtitle">Skorun: ${score}</p>
-        <button id="restartBtn" class="btn-primary">TEKRAR OYNA</button>`;
-      document.getElementById('restartBtn').onclick = () => startGame();
+        <p class="subtitle">${levelName(level)} · Skor: ${score}</p>
+        <button id="restartBtn" class="btn-primary">TEKRAR OYNA</button>
+        <button id="menuBtn" class="btn-secondary">MENÜYE DÖN</button>`;
+      document.getElementById('restartBtn').onclick = () => startGame(level);
+      document.getElementById('menuBtn').onclick = () => showMenu();
     } else if (kind === 'win') {
+      const finishedName = levelName(level);
+      const nextName = levelName(level + 1);
       card.innerHTML = `
-        <h1 class="title"><span class="t1">SEVİYE</span><span class="t2">TAMAM</span></h1>
-        <p class="subtitle">Skor: ${score} · Sıradaki: ${level + 1}</p>
+        <h1 class="title"><span class="t1">BÖLÜM</span><span class="t2">${level} ✓</span></h1>
+        <p class="subtitle">${finishedName} — Skor: ${score}</p>
+        <p class="next-up">Sıradaki: <b>${level + 1}. ${nextName}</b></p>
         <button id="nextBtn" class="btn-primary">DEVAM</button>`;
       document.getElementById('nextBtn').onclick = () => { hideOverlay(); nextLevel(); };
-      // 1 sn sonra otomatik geç — beklemek yok.
+      // 1.2 sn sonra otomatik geç — beklemek yok.
       setTimeout(() => {
         if (state === STATE.WIN) { hideOverlay(); nextLevel(); }
-      }, 1000);
+      }, 1200);
     }
     ui.overlay.classList.add('show');
   }
@@ -341,24 +512,43 @@
     narrow: { base:'#c41a3a', light:'#ff7a8e', glow:'rgba(255,40,70,0.85)' },
     fast:   { base:'#d04a00', light:'#ffb070', glow:'rgba(255,120,30,0.85)' },
   };
-  function maybeDropPower(x, y, forced = false) {
-    // L1-L4 hızlı: yüksek drop oranı + multi-ball bol. L3+ power-down karışır.
-    let chance;
-    if (forced)           chance = 1;
-    else if (level === 1) chance = 1.0;
-    else if (level === 2) chance = 0.85;
-    else if (level === 3) chance = 0.70;
-    else if (level === 4) chance = 0.70;
-    else                  chance = 0.45;
+  // Her bölüm için düşme oranı + havuzu. "Başarma hissi" eğrisi:
+  // - Erken bölümler bol pozitif; zor bölümlerde dengelenir
+  // - Multi-ball pool'dan asla çıkmaz: oyuncu daima toparlanabilir
+  // - Power-down'lar L5'ten itibaren girer, asla baskın değil
+  function dropConfig(lv) {
+    const T = {
+      1:  { chance: 1.00, pool: ['multi'] },
+      2:  { chance: 0.85, pool: ['multi','multi','multi','wide','life'] },
+      3:  { chance: 0.75, pool: ['multi','multi','wide','wide','slow','life'] },
+      4:  { chance: 0.70, pool: ['multi','multi','wide','wide','slow','life','narrow'] },
+      5:  { chance: 0.60, pool: ['multi','multi','wide','wide','slow','life','narrow','fast'] },
+      6:  { chance: 0.55, pool: ['multi','multi','wide','slow','life','narrow','fast'] },
+      7:  { chance: 0.55, pool: ['multi','multi','wide','slow','life','life','narrow','fast'] },
+      8:  { chance: 0.50, pool: ['multi','wide','slow','life','life','narrow','fast'] },
+      9:  { chance: 0.50, pool: ['multi','multi','wide','slow','life','narrow','narrow','fast'] },
+      10: { chance: 0.50, pool: ['multi','multi','wide','wide','slow','life','life','narrow','fast'] },
+      11: { chance: 0.45, pool: ['multi','wide','slow','life','narrow','fast'] },
+      12: { chance: 0.45, pool: ['multi','multi','wide','slow','life','narrow','narrow','fast','fast'] },
+      13: { chance: 0.45, pool: ['multi','wide','slow','life','life','narrow','fast'] },
+      14: { chance: 0.45, pool: ['multi','multi','wide','slow','life','narrow','narrow','fast','fast'] },
+      15: { chance: 0.50, pool: ['multi','multi','wide','wide','slow','life','life','narrow','fast'] },
+    };
+    return T[lv] || { chance: 0.45, pool: ['multi','wide','slow','life','narrow','fast'] };
+  }
+
+  function maybeDropPower(x, y) {
+    const cfg = dropConfig(level);
+    let chance = cfg.chance;
+    let pool = cfg.pool;
+
+    // Güvenlik ağı: son canda multi-ball şansı katlanır, power-down'lar silinir.
+    if (lives <= 1) {
+      chance = Math.min(1, chance + 0.25);
+      pool = pool.filter(t => !NEGATIVE_TYPES.has(t)).concat(['multi','multi']);
+    }
+
     if (Math.random() >= chance) return;
-
-    let pool;
-    if (level === 1)      pool = ['multi'];
-    else if (level === 2) pool = ['multi','multi','multi','multi','wide','wide','life'];
-    else if (level === 3) pool = ['multi','multi','multi','wide','wide','slow','life','narrow'];
-    else if (level === 4) pool = ['multi','multi','multi','multi','multi','wide','wide','slow','life','narrow','fast'];
-    else                  pool = ['multi','multi','wide','wide','slow','life','narrow','fast'];
-
     const type = pool[Math.floor(Math.random() * pool.length)];
     powerups.push({ x, y, type, vy: 2.2, w: 26, h: 26, negative: NEGATIVE_TYPES.has(type) });
   }
@@ -501,6 +691,14 @@
             else if (fromTop || fromBot) b.vy *= -1;
             else b.vy *= -1;
 
+            if (br.steel) {
+              // Çelik: zarar yok, sadece sek + kıvılcım
+              br.hit = 6;
+              sfx.wall();
+              spawnBurst(br.x + br.w / 2, br.y + br.h / 2, br.palette, 4);
+              break;
+            }
+
             br.hp--;
             br.hit = 8;
             sfx.brick();
@@ -515,7 +713,7 @@
               br.alive = false;
               spawnBurst(br.x + br.w / 2, br.y + br.h / 2, br.palette, 16);
               spawnPopup(br.x + br.w / 2, br.y, `+${gain}`, br.palette.light);
-              maybeDropPower(br.x + br.w / 2, br.y + br.h / 2, br.guaranteedPower);
+              maybeDropPower(br.x + br.w / 2, br.y + br.h / 2);
             } else {
               spawnBurst(br.x + br.w / 2, br.y + br.h / 2, br.palette, 5);
             }
@@ -527,7 +725,8 @@
 
     if (balls.length === 0) loseLife();
 
-    if (bricks.length && bricks.every(b => !b.alive)) {
+    // Win: tüm kırılabilir tuğlalar gitti mi? (çelik sayılmaz)
+    if (bricks.length && bricks.every(b => b.steel || !b.alive)) {
       state = STATE.WIN;
       showOverlay('win');
     }
@@ -603,6 +802,7 @@
   }
 
   function drawBrick(b) {
+    if (b.steel) { drawSteelBrick(b); return; }
     const x = b.x, y = b.y, w = b.w, h = b.h;
     const hitOffset = b.hit > 0 ? -b.hit * 0.3 : 0;
     const p = b.palette;
@@ -664,19 +864,67 @@
         ctx.arc(startX + i * 6, y + h / 2 + hitOffset, dotR, 0, Math.PI * 2);
         ctx.fill();
       }
-    } else if (b.guaranteedPower) {
-      // Garanti power-up göstergesi — nabız atan ★
-      const pulse = 0.7 + Math.sin(performance.now() / 200) * 0.3;
-      ctx.save();
-      ctx.globalAlpha = pulse;
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px Segoe UI, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('★', x + w / 2, y + h / 2 + hitOffset + 1);
-      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawSteelBrick(b) {
+    const x = b.x, y = b.y, w = b.w, h = b.h;
+    const hitOffset = b.hit > 0 ? -b.hit * 0.3 : 0;
+    const p = b.palette;
+
+    ctx.save();
+    // Gölge
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    roundRect(ctx, x + 2, y + 4 + hitOffset, w, h, 4);
+    ctx.fill();
+
+    // Metalik gövde (yatay bant gradient)
+    const grd = ctx.createLinearGradient(0, y + hitOffset, 0, y + h + hitOffset);
+    grd.addColorStop(0,    '#c4cad8');
+    grd.addColorStop(0.35, '#6e7585');
+    grd.addColorStop(0.55, '#4a505f');
+    grd.addColorStop(0.75, '#7a8294');
+    grd.addColorStop(1,    '#2c3242');
+    ctx.fillStyle = grd;
+    roundRect(ctx, x, y + hitOffset, w, h, 4);
+    ctx.fill();
+
+    // Tepe parlaması
+    const hgrd = ctx.createLinearGradient(0, y + hitOffset, 0, y + h * 0.3 + hitOffset);
+    hgrd.addColorStop(0, 'rgba(255,255,255,0.7)');
+    hgrd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hgrd;
+    roundRect(ctx, x + 1, y + 1 + hitOffset, w - 2, h * 0.3, 3);
+    ctx.fill();
+
+    // Perçinler (4 köşe)
+    ctx.fillStyle = 'rgba(20,24,32,0.85)';
+    const r = 1.8;
+    const px = [x + 4, x + w - 4];
+    const py = [y + 4 + hitOffset, y + h - 4 + hitOffset];
+    for (const xx of px) for (const yy of py) {
+      ctx.beginPath();
+      ctx.arc(xx, yy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Perçin highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (const xx of px) for (const yy of py) {
+      ctx.beginPath();
+      ctx.arc(xx - 0.4, yy - 0.4, 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Çarpma flash
+    if (b.hit > 0) {
+      ctx.shadowColor = p.glow;
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.2;
+      roundRect(ctx, x + 0.5, y + 0.5 + hitOffset, w - 1, h - 1, 4);
+      ctx.stroke();
+      b.hit--;
     }
     ctx.restore();
   }
@@ -880,7 +1128,7 @@
     ctx.fillStyle = 'rgba(180,200,255,0.5)';
     ctx.font = 'bold 10px Segoe UI, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('v8', 8, H - 8);
+    ctx.fillText('v9', 8, H - 8);
     ctx.restore();
   }
 
