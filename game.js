@@ -147,7 +147,9 @@
         const palette = PALETTES[r % PALETTES.length];
         const x = BRICK_SIDE + c * (BRICK_W + BRICK_PAD);
         const y = BRICK_TOP + r * (BRICK_H + BRICK_PAD);
-        bricks.push({ x, y, w: BRICK_W, h: BRICK_H, hp, maxHp: hp, palette, hit: 0, alive: true });
+        // Yeşil tuğlalar (row 3) garanti power-up bırakır.
+        const guaranteedPower = (r % PALETTES.length) === 3;
+        bricks.push({ x, y, w: BRICK_W, h: BRICK_H, hp, maxHp: hp, palette, hit: 0, alive: true, guaranteedPower });
       }
     }
   }
@@ -329,17 +331,20 @@
     slow:  { base:'#7a4dff', light:'#bda0ff', glow:'rgba(122,77,255,0.7)' },
     life:  { base:'#ff3a55', light:'#ff9aa5', glow:'rgba(255,58,85,0.7)' },
   };
-  function maybeDropPower(x, y) {
+  function maybeDropPower(x, y, forced = false) {
+    // Yeşil tuğlalar (forced=true) her zaman power-up bırakır.
     // İlk bölümlerde neredeyse her tuğladan power-up yağsın, sonra normale dönsün.
     // L1: 0.85, L2: 0.70, L3: 0.50, L4: 0.35, L5: 0.25, L6+: 0.20
-    let chance;
-    if (level === 1)      chance = 0.85;
-    else if (level === 2) chance = 0.70;
-    else if (level === 3) chance = 0.50;
-    else if (level === 4) chance = 0.35;
-    else if (level === 5) chance = 0.25;
-    else                  chance = 0.20;
-    if (Math.random() >= chance) return;
+    if (!forced) {
+      let chance;
+      if (level === 1)      chance = 0.85;
+      else if (level === 2) chance = 0.70;
+      else if (level === 3) chance = 0.50;
+      else if (level === 4) chance = 0.35;
+      else if (level === 5) chance = 0.25;
+      else                  chance = 0.20;
+      if (Math.random() >= chance) return;
+    }
 
     // Erken bölümlerde ×3 (multi) ezici çoğunlukta, ekranı dolduralım.
     let pool;
@@ -476,7 +481,7 @@
               br.alive = false;
               spawnBurst(br.x + br.w / 2, br.y + br.h / 2, br.palette, 16);
               spawnPopup(br.x + br.w / 2, br.y, `+${gain}`, br.palette.light);
-              maybeDropPower(br.x + br.w / 2, br.y + br.h / 2);
+              maybeDropPower(br.x + br.w / 2, br.y + br.h / 2, br.guaranteedPower);
             } else {
               spawnBurst(br.x + br.w / 2, br.y + br.h / 2, br.palette, 5);
             }
@@ -625,6 +630,19 @@
         ctx.arc(startX + i * 6, y + h / 2 + hitOffset, dotR, 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (b.guaranteedPower) {
+      // Garanti power-up göstergesi — nabız atan ★
+      const pulse = 0.7 + Math.sin(performance.now() / 200) * 0.3;
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px Segoe UI, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', x + w / 2, y + h / 2 + hitOffset + 1);
+      ctx.restore();
     }
     ctx.restore();
   }
