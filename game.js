@@ -330,16 +330,23 @@
     life:  { base:'#ff3a55', light:'#ff9aa5', glow:'rgba(255,58,85,0.7)' },
   };
   function maybeDropPower(x, y) {
-    // İlk bölümlerde bol power-up, sonraki bölümlerde normal seviyeye iner.
-    // L1: 0.55, L2: 0.45, L3: 0.35, L4: 0.27, L5: 0.22, L6+: 0.18
-    const chance = Math.max(0.18, 0.55 - (level - 1) * 0.09);
+    // İlk bölümlerde neredeyse her tuğladan power-up yağsın, sonra normale dönsün.
+    // L1: 0.85, L2: 0.70, L3: 0.50, L4: 0.35, L5: 0.25, L6+: 0.20
+    let chance;
+    if (level === 1)      chance = 0.85;
+    else if (level === 2) chance = 0.70;
+    else if (level === 3) chance = 0.50;
+    else if (level === 4) chance = 0.35;
+    else if (level === 5) chance = 0.25;
+    else                  chance = 0.20;
     if (Math.random() >= chance) return;
 
-    // Erken bölümlerde tuğla kıran power-up'ları (multi + wide) ağırlıklı dağıt.
+    // Erken bölümlerde ×3 (multi) ezici çoğunlukta, ekranı dolduralım.
     let pool;
-    if (level === 1)      pool = ['multi','multi','multi','wide','wide','life'];
-    else if (level === 2) pool = ['multi','multi','wide','wide','slow','life'];
-    else if (level === 3) pool = ['multi','wide','wide','slow','slow','life'];
+    if (level === 1)      pool = ['multi','multi','multi','multi','multi','wide','life'];
+    else if (level === 2) pool = ['multi','multi','multi','multi','wide','wide','life'];
+    else if (level === 3) pool = ['multi','multi','multi','wide','wide','slow','life'];
+    else if (level === 4) pool = ['multi','multi','wide','wide','slow','life'];
     else                  pool = POWER_TYPES;
 
     const type = pool[Math.floor(Math.random() * pool.length)];
